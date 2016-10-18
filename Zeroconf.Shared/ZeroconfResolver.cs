@@ -45,43 +45,42 @@ namespace Zeroconf
                                                                                  Action<string, Response> callback,
                                                                                  CancellationToken cancellationToken)
         {
-            using (await ResolverLock.LockAsync())
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (scanTime == default(TimeSpan))
-                    scanTime = TimeSpan.FromSeconds(2);
 
-                var dict = new Dictionary<string, Response>();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (scanTime == default(TimeSpan))
+                scanTime = TimeSpan.FromSeconds(2);
 
-                Action<string, byte[]> converter =
-                    (address, buffer) =>
+            var dict = new Dictionary<string, Response>();
+
+            Action<string, byte[]> converter =
+                (address, buffer) =>
+                {
+                    var resp = new Response(buffer);
+                    Debug.WriteLine($"IP: {address}, Bytes: {buffer.Length}, IsResponse: {resp.header.QR}");
+
+                    if (resp.header.QR)
                     {
-                        var resp = new Response(buffer);
-                        Debug.WriteLine($"IP: {address}, Bytes: {buffer.Length}, IsResponse: {resp.header.QR}");
-
-                        if (resp.header.QR)
+                        lock (dict)
                         {
-                            lock (dict)
-                            {
-                                dict[address] = resp;
-                            }
-
-                            callback?.Invoke(address, resp);
+                            dict[address] = resp;
                         }
-                    };
 
-                Debug.WriteLine($"Looking for {string.Join(", ", protocols)} with scantime {scanTime}");
+                        callback?.Invoke(address, resp);
+                    }
+                };
 
-                await NetworkInterface.NetworkRequestAsync(requestBytes,
-                                                           scanTime,
-                                                           retries,
-                                                           retryDelayMilliseconds,
-                                                           converter,                                                           
-                                                           cancellationToken)
-                                      .ConfigureAwait(false);
+            Debug.WriteLine($"Looking for {string.Join(", ", protocols)} with scantime {scanTime}");
 
-                return dict;
-            }
+            await NetworkInterface.NetworkRequestAsync(requestBytes,
+                                                       scanTime,
+                                                       retries,
+                                                       retryDelayMilliseconds,
+                                                       converter,
+                                                       cancellationToken)
+                                  .ConfigureAwait(false);
+
+            return dict;
+
         }
 
         static byte[] GetRequestBytes(IEnumerable<string> protocols)
