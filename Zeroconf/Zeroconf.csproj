@@ -16,6 +16,7 @@
     <CodeAnalysisRuleSet>Zeroconf.ruleset</CodeAnalysisRuleSet>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Zeroconf.Pingman</PackageId>
+    <Version>2.9.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
