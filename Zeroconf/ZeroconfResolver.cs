@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace Zeroconf
                                                                          CancellationToken cancellationToken)
         {
             var requestBytes = GetRequestBytes(options);
-            using (await ResolverLock.LockAsync())
+            using (options.AllowOverlappedQueries ? Disposable.Empty : await ResolverLock.LockAsync())
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var dict = new Dictionary<string, Response>();
